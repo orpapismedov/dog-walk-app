@@ -1,7 +1,17 @@
 // App.js
-import React, { useState } from "react";
+import { useState, useEffect } from 'react';
 import momiImg from "./images/momi.jpeg";
 import oliImg from "./images/oli.png";
+import { db } from "./firebase";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc
+} from "firebase/firestore";
+
+
 
 function getLocalDateTimeString() {
   const now = new Date();
@@ -28,20 +38,44 @@ function App() {
   const [adminLogin, setAdminLogin] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
 
+  //פה הוספתי
+ useEffect(() => {
+  const fetchEntries = async () => {
+    const querySnapshot = await getDocs(collection(db, "entries"));
+    const firebaseEntries = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    setEntries(firebaseEntries);
+  };
+
+  fetchEntries();
+}, []);
+
+
+  //עד לפה
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setEntries([...entries, formData]);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const docRef = await addDoc(collection(db, "entries"), formData);
+    setEntries([...entries, { ...formData, id: docRef.id }]);
     setFormData({
       user: "",
       dog: "",
       datetime: getLocalDateTimeString(),
       notes: "",
     });
-  };
+  } catch (error) {
+    console.error("Error adding entry to Firestore:", error);
+  }
+  console.log("Saved to Firebase");
+};
+
 
   const handleAdminLogin = () => {
     if (loginForm.username === "or" && loginForm.password === "1234") {
@@ -60,11 +94,20 @@ function App() {
     setDogs(dogs.filter((d) => d.name !== name));
   };
 
-  const handleDeleteEntry = (index) => {
-    const newEntries = [...entries];
-    newEntries.splice(index, 1);
-    setEntries(newEntries);
-  };
+  const handleDeleteEntry = async (index) => {
+  const entryToDelete = entries[index];
+  if (entryToDelete.id) {
+    try {
+      await deleteDoc(doc(db, "entries", entryToDelete.id));
+    } catch (error) {
+      console.error("Error deleting from Firestore:", error);
+    }
+  }
+  const newEntries = [...entries];
+  newEntries.splice(index, 1);
+  setEntries(newEntries);
+};
+
 
   const handleAddUser = (name) => {
     if (name && !users.includes(name)) {
