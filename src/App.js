@@ -379,7 +379,7 @@ function App() {
             type="submit"
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl text-lg hover:bg-blue-700 transition"
           >
-            הוסף טיול
+            שלח טיול
           </button>
         </form>
       </div>
